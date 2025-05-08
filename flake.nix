@@ -11,6 +11,9 @@
 
     git-hooks-nix.url = "github:cachix/git-hooks.nix";
     git-hooks-nix.inputs.nixpkgs.follows = "nixpkgs";
+
+    nix-environments.url = "github:nix-community/nix-environments";
+    nix-environments.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
@@ -26,10 +29,12 @@
         treefmt-nix.flakeModule
       ];
 
+      transposition.nix-environments = { };
+
       perSystem =
         {
           config,
-          pkgs,
+          inputs',
           ...
         }:
         {
@@ -43,9 +48,15 @@
 
           treefmt.programs.nixfmt.enable = true;
 
-          devShells.default = pkgs.callPackage ./shell.nix {
-            pre-commit-install = config.pre-commit.installationScript;
-          };
+          devShells.default = inputs'.nix-environments.devShells.ladybird.overrideAttrs (
+            final: prev: {
+              shellHook =
+                prev.shellHook
+                + ''
+                  ${config.pre-commit.installationScript}
+                '';
+            }
+          );
         };
 
       systems = [
